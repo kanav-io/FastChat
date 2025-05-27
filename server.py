@@ -1,7 +1,17 @@
 import socket
 import threading
+import os
 
 clients = []
+
+
+def admin_console():
+    
+    while True:
+        cmd = input() 
+        if cmd.strip().lower() == "terminate":
+            print("[SERVER] Terminate command received. Shutting down.")
+            os._exit(0) 
 
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
@@ -28,6 +38,9 @@ def start_server(host='0.0.0.0', port=12345):
     server.listen()
     print(f"[LISTENING] Server running on {host}:{port}")
 
+    # ←— Start admin console thread
+    threading.Thread(target=admin_console, daemon=True).start()
+    
     while True:
         conn, addr = server.accept()
         clients.append(conn)
