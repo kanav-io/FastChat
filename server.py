@@ -2,6 +2,34 @@ import socket
 import threading
 import os
 
+# === Database setup ===
+import sqlite3
+from datetime import datetime
+
+def log_message(username: str, text: str):
+    """Insert a chat message into the SQLite history table."""
+    timestamp = datetime.utcnow().isoformat()  # e.g. '2025-05-28T12:34:56.789'
+    cursor.execute(
+        "INSERT INTO messages (username, text, timestamp) VALUES (?, ?, ?)",
+        (username, text, timestamp)
+    )
+    db.commit()
+
+
+db = sqlite3.connect("chat_history.db", check_same_thread=False)
+cursor = db.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    text     TEXT NOT NULL,
+    timestamp TEXT NOT NULL
+)
+""")
+db.commit()
+
+
 clients = []
 
 
@@ -20,7 +48,11 @@ def handle_client(conn, addr):
             msg = conn.recv(1024)
             if not msg:
                 break
-            print(f"[{addr}] {msg.decode()}")
+            text = msg.decode().strip()
+            print(f"[{addr}] {text}")
+
+            log_message(str(addr), text)
+
             # Broadcast to other clients
             for client in clients:
                 if client != conn:
@@ -40,7 +72,7 @@ def start_server(host='0.0.0.0', port=12345):
 
     # ←— Start admin console thread
     threading.Thread(target=admin_console, daemon=True).start()
-    
+
     while True:
         conn, addr = server.accept()
         clients.append(conn)
