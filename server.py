@@ -15,6 +15,18 @@ def log_message(username: str, text: str):
     )
     db.commit()
 
+def get_last_messages(limit: int = 10):
+    """Return the last `limit` messages as a list of (username, text, timestamp)."""
+    cursor.execute(
+        "SELECT username, text, timestamp "
+        "FROM messages "
+        "ORDER BY id DESC "
+        "LIMIT ?",
+        (limit,)
+    )
+    rows = cursor.fetchall()
+    return rows[::-1]
+
 
 db = sqlite3.connect("chat_history.db", check_same_thread=False)
 cursor = db.cursor()
@@ -43,6 +55,15 @@ def admin_console():
 
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
+
+    # === Send recent history ===
+    conn.send(b"SYSTEM: Last 10 messages:\n")
+    for user, text, ts in get_last_messages(10):
+        time_str = ts.split("T")[1][:8]
+        conn.send(f"[{time_str}] {user}: {text}\n".encode())
+
+    conn.send(b"SYSTEM: You can now chat. Type exit to quit.\n")
+    
     while True:
         try:
             msg = conn.recv(1024)
