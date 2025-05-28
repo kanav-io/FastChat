@@ -1,1 +1,2 @@
 bcrypt
+pysqlite3-binary
