@@ -21,3 +21,4 @@ echo
 echo "✅ Setup complete!"
 echo "Run 'source venv/bin/activate' to activate your environment."
 echo "Then use 'python server.py' or 'python client.py --host <HOST> --port <PORT>'."
+echo "To exit the environment Run 'deactivate'."
