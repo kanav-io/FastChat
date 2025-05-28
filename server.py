@@ -2,6 +2,7 @@ import socket
 import threading
 import os
 
+import sqlite3
 
 # === Authentication ===
 import bcrypt
@@ -43,7 +44,6 @@ def authenticate_user(username: str, password: str) -> bool:
 
 
 # === Database setup ===
-import sqlite3
 from datetime import datetime
 
 def log_message(username: str, text: str):
