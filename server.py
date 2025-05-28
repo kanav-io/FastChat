@@ -89,7 +89,7 @@ def admin_console():
     
     while True:
         cmd = input() 
-        if cmd.strip().lower() == "terminate":
+        if cmd.strip().lower() == "$terminate":
             print("[SERVER] Terminate command received. Shutting down.")
             os._exit(0) 
 
@@ -97,7 +97,7 @@ def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
 
     # —– Authentication Phase —–
-    conn.send(b"SYSTEM: Welcome! Use /register <user> <pass> or /login <user> <pass>\n")
+    conn.send(b"SYSTEM: Welcome! Use $register <user> <pass> or $login <user> <pass>\n")
     username = None
     while True:
         data = conn.recv(1024)
@@ -105,18 +105,18 @@ def handle_client(conn, addr):
             conn.close()
             return
         parts = data.decode().strip().split()
-        if len(parts) != 3 or parts[0] not in ("/register", "/login"):
-            conn.send(b"SYSTEM: Invalid. Try /register or /login.\n")
+        if len(parts) != 3 or parts[0] not in ("$register", "$login"):
+            conn.send(b"SYSTEM: Invalid. Try $register or $login.\n")
             continue
 
         cmd, user, pwd = parts
-        if cmd == "/register":
+        if cmd == "$register":
             if register_user(user, pwd):
-                conn.send(f"SYSTEM: Registered {user}. Now /login.\n".encode())
+                conn.send(f"SYSTEM: Registered {user}. Now $login.\n".encode())
             else:
                 conn.send(f"SYSTEM: Username {user} taken.\n".encode())
 
-        else:  # /login
+        else:  
             if authenticate_user(user, pwd):
                 conn.send(f"SYSTEM: Login successful. Welcome {user}!\n".encode())
                 username = user

@@ -21,9 +21,14 @@ def start_client(server_ip='127.0.0.1', server_port=12345):
 
     while True:
         msg = input()
-        if msg.lower() == "exit":
-            break
-        client.send(f"{name}: {msg}".encode())
+        if msg[0] == "$"
+            if msg.lower() == "$exit":
+                break
+            else:
+                client.send(f"{msg}".encode())
+
+        else:
+            client.send(f"{name}: {msg}".encode())
 
     client.close()
 
