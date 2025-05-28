@@ -2,6 +2,46 @@ import socket
 import threading
 import os
 
+
+# === Authentication ===
+import bcrypt
+
+# === User database setup ===
+user_db = sqlite3.connect("chat_users.db", check_same_thread=False)
+user_cur = user_db.cursor()
+user_cur.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password_hash BLOB NOT NULL
+)
+""")
+user_db.commit()
+
+def register_user(username: str, password: str) -> bool:
+    """Hash password and insert new user. Return False if username exists."""
+    pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    try:
+        user_cur.execute(
+            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+            (username, pw_hash)
+        )
+        user_db.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+def authenticate_user(username: str, password: str) -> bool:
+    """Check given password against stored hash. Return True if match."""
+    user_cur.execute(
+        "SELECT password_hash FROM users WHERE username = ?", (username,)
+    )
+    row = user_cur.fetchone()
+    if not row:
+        return False
+    stored_hash = row[0]
+    return bcrypt.checkpw(password.encode(), stored_hash)
+
+
 # === Database setup ===
 import sqlite3
 from datetime import datetime
@@ -56,6 +96,34 @@ def admin_console():
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
 
+    # —– Authentication Phase —–
+    conn.send(b"SYSTEM: Welcome! Use /register <user> <pass> or /login <user> <pass>\n")
+    username = None
+    while True:
+        data = conn.recv(1024)
+        if not data:
+            conn.close()
+            return
+        parts = data.decode().strip().split()
+        if len(parts) != 3 or parts[0] not in ("/register", "/login"):
+            conn.send(b"SYSTEM: Invalid. Try /register or /login.\n")
+            continue
+
+        cmd, user, pwd = parts
+        if cmd == "/register":
+            if register_user(user, pwd):
+                conn.send(f"SYSTEM: Registered {user}. Now /login.\n".encode())
+            else:
+                conn.send(f"SYSTEM: Username {user} taken.\n".encode())
+
+        else:  # /login
+            if authenticate_user(user, pwd):
+                conn.send(f"SYSTEM: Login successful. Welcome {user}!\n".encode())
+                username = user
+                break
+            else:
+                conn.send(b"SYSTEM: Login failed.\n")
+
     # === Send recent history ===
     conn.send(b"SYSTEM: Last 10 messages:\n")
     for user, text, ts in get_last_messages(10):
@@ -63,7 +131,7 @@ def handle_client(conn, addr):
         conn.send(f"[{time_str}] {user}: {text}\n".encode())
 
     conn.send(b"SYSTEM: You can now chat. Type exit to quit.\n")
-    
+
     while True:
         try:
             msg = conn.recv(1024)
