@@ -145,14 +145,29 @@ def handle_client(conn, addr):
             if not msg:
                 break
             text = msg.decode().strip()
-            print(f"[{addr}] {text}")
 
+            if text == "/who":
+                user_list = ", ".join(clients.values())
+                conn.send(f"SYSTEM: Online users: {user_list}\n".encode())
+                continue
+
+            elif text.startswith("@"):
+                try:
+                    target_user, private_msg = text[1:].split(" ", 1)
+                    target_conn = next((c for c, u in clients.items() if u == target_user), None)
+                    if target_conn:
+                        sender = clients[conn]
+                        target_conn.send(f"[PM from {sender}] {private_msg}\n".encode())
+                        conn.send(f"[PM to {target_user}] {private_msg}\n".encode())
+                    else:
+                        conn.send(f"SYSTEM: User {target_user} not online.\n".encode())
+                except ValueError:
+                    conn.send(b"SYSTEM: Usage: @username message\n")
+                continue
+    
+                
             log_message(str(addr), text)
 
-            # Broadcast to other clients
-            for client in clients:
-                if client != conn:
-                    client.send(f"{username}: {text}\n".encode())
         except:
             break
 
