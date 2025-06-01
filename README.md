@@ -1,5 +1,3 @@
----
-
 # 💬 FastChat: Terminal-Based Encrypted Chat Server
 
 **FastChat** is a lightweight, terminal-based chat application built with Python, offering secure **user authentication**, **private messaging**, and **message history logging** using `SQLite` and `bcrypt`. Ideal for small-scale secure internal communication.
