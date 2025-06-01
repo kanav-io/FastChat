@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS messages (
 db.commit()
 
 
-clients = []
+clients = {}
 
 
 def admin_console():
@@ -92,6 +92,11 @@ def admin_console():
         if cmd.strip().lower() == "$terminate":
             print("[SERVER] Terminate command received. Shutting down.")
             os._exit(0) 
+
+        elif cmd.strip() == "$getClient":
+            for conn, username in clients.items():
+                print(f"{username} connected from {conn.getpeername()}")
+
 
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
@@ -120,6 +125,8 @@ def handle_client(conn, addr):
             if authenticate_user(user, pwd):
                 conn.send(f"SYSTEM: Login successful. Welcome {user}!\n".encode())
                 username = user
+                clients[conn] = username
+
                 break
             else:
                 conn.send(b"SYSTEM: Login failed.\n")
@@ -145,12 +152,12 @@ def handle_client(conn, addr):
             # Broadcast to other clients
             for client in clients:
                 if client != conn:
-                    client.send(msg)
+                    client.send(f"{username}: {text}\n".encode())
         except:
             break
 
     print(f"[DISCONNECTED] {addr}")
-    clients.remove(conn)
+    clients.pop(conn, None) 
     conn.close()
 
 def start_server(host='0.0.0.0', port=12345):
@@ -164,7 +171,6 @@ def start_server(host='0.0.0.0', port=12345):
 
     while True:
         conn, addr = server.accept()
-        clients.append(conn)
         thread = threading.Thread(target=handle_client, args=(conn, addr))
         thread.start()
 
