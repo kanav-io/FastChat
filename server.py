@@ -46,12 +46,12 @@ def authenticate_user(username: str, password: str) -> bool:
 # === Database setup ===
 from datetime import datetime
 
-def log_message(username: str, text: str):
+def log_message(username: str, text: str, recipient: str = None):
     """Insert a chat message into the SQLite history table."""
     timestamp = datetime.utcnow().isoformat()  # e.g. '2025-05-28T12:34:56.789'
     cursor.execute(
-        "INSERT INTO messages (username, text, timestamp) VALUES (?, ?, ?)",
-        (username, text, timestamp)
+        "INSERT INTO messages (username, text, timestamp, recipient) VALUES (?, ?, ?, ?)",
+        (username, text, timestamp, recipient)
     )
     db.commit()
 
@@ -76,9 +76,11 @@ CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
     text     TEXT NOT NULL,
-    timestamp TEXT NOT NULL
+    timestamp TEXT NOT NULL,
+    recipient TEXT
 )
 """)
+
 db.commit()
 
 
@@ -159,6 +161,7 @@ def handle_client(conn, addr):
                         sender = clients[conn]
                         target_conn.send(f"[PM from {sender}] {private_msg}\n".encode())
                         conn.send(f"[PM to {target_user}] {private_msg}\n".encode())
+                        log_message(username, private_msg, recipient=target_user)
                     else:
                         conn.send(f"SYSTEM: User {target_user} not online.\n".encode())
                 except ValueError:
@@ -166,7 +169,7 @@ def handle_client(conn, addr):
                 continue
     
                 
-            log_message(str(addr), text)
+            log_message(username, text)
 
         except:
             break
