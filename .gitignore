@@ -1,0 +1,22 @@
+# Virtual env
+venv/
+.env/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Local databases & storage
+*.db
+.fastchat/
+
+# Secrets & configs
+*.bin
+*.b64
+.env
+
+# macOS
+.DS_Store
+
+# Editor backups
+*~
